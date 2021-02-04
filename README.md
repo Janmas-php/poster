@@ -3,7 +3,12 @@
 #### Poster类解析
 
 ```
-$poster = new Post();
+不传path则创建空白画布
+传path则以path文件为画布
+
+$poster = new Post(
+    $path //图片路径
+);
 ```
 
 ##### create
@@ -24,8 +29,8 @@ $poster->create(
 ```
 $poster->setPicture(
 	$path,//图片路径
-	$tar_w=0,//原图要载入的宽度
-	$tar_h=0,//原图要载入的高度
+	$tar_w=0,//原图要载入的宽度 -1为跟随画布大小
+	$tar_h=0,//原图要载入的高度 -1为跟随画布大小
 	$dst_x=0,//设定需要载入的图片在新图中的x坐标
 	$dst_y=0,//设定需要载入的图片在新图中的y坐标
 	$src_w=-1,//原图要载入的宽度 -1为原图大小
@@ -106,9 +111,18 @@ $poster->output(
 	);
 ```
 
+##### stream
+
+- 输出资源到浏览器
+
+```
+$poster->output(
+	$ext='png' //图片后缀
+	);
+```
 
 
-###### eg：
+##### eg：
 
 ```
   $poster = new Poster();
@@ -121,3 +135,4 @@ $poster->output(
   $poster->output('./test/a.png');//输出文件（现在仅能输出到文本暂不支持输出到浏览器）
 ```
 
+##### <font color="red">注：仅支持jpg、png、jpeg、gif后缀类型</font>

@@ -11,16 +11,33 @@
 class Poster
 {
 
+	/**
+	 * 画布
+	 * @var
+	 */
 	protected  $canvas;
 
+	/**
+	 * 底片
+	 * @var mixed|null
+	 */
 	protected $negative = null;
-	
+
+	/**
+	 * 底片信息
+	 * @var array|false|null
+	 */
 	protected $negativeInfo = null;
 
+	/**
+	 * 字体信息
+	 * @var string
+	 */
 	public $ttfPath = '';
 
 	public function __construct($path=null){
-		if(!is_null($path) && is_file($path)){
+		if(!is_null($path)){
+			if (!is_file($path)) throw new \Exception('文件'.$path.'不存在');
 			$this->negative = $path;
 			$this->negativeInfo = getimagesize($this->negative);
 			$this->negativeInfo['ext'] = image_type_to_extension($this->negativeInfo[2],false);
@@ -39,6 +56,9 @@ class Poster
 			if(is_null($width) || is_null($height)){
 				throw new \Exception('请传入宽高');
 			}
+			$this->negativeInfo = [
+				$width,$height
+			];
 			$this->canvas = imagecreatetruecolor($width, $height);
 		}else{
 			$func = 'imagecreatefrom' . $this->negativeInfo['ext'];
@@ -74,7 +94,7 @@ class Poster
 	 * @param int $dst_y 设定需要载入的图片在新图中的y坐标
 	 * @return $this
 	 */
-	public function setPicture($path,$tar_w=0,$tar_h=0,$src_w=-1,$src_h=-1,$dst_x=0,$dst_y=0,$src_x=0,$src_y=0){
+	public function setPicture($path,$tar_w=-1,$tar_h=-1,$dst_x=0,$dst_y=0,$src_w=-1,$src_h=-1,$src_x=0,$src_y=0){
 		if(!is_file($path)){
 			throw new \Exception('文件'.$path .'不存在');
 		}
@@ -83,6 +103,10 @@ class Poster
 		$picGdResource = $picHandleFunc($path);
 		$src_w = $src_w < 0 ? $picSize[0]:$src_w;
 		$src_h = $src_h < 0 ? $picSize[1]:$src_h;
+
+		$tar_w = $tar_w< 0 ? $this->negativeInfo[0]:$tar_w;
+		$tar_h = $tar_h< 0 ? $this->negativeInfo[1]:$tar_h;
+
 		imagecopyresampled($this->canvas, $picGdResource, $dst_x, $dst_y, $src_x,$src_y,$tar_w,$tar_h,$src_w,$src_h);
 		imagedestroy($picGdResource);
 		return $this;
@@ -118,11 +142,11 @@ class Poster
 	}
 
 	/**
-	 * 输出
+	 * 返回文件
 	 * @param $filename
 	 * @param int $quality
 	 */
-	public function output($filename,$quality=5){
+	public function output($filename=null,$quality=5){
 		$ext = explode('.',$filename);
 		$ext = array_pop($ext);
 		$this->checkDir(dirname($filename));
@@ -131,18 +155,31 @@ class Poster
 		}
 	}
 
-	/* 文字自动换行
-	* @param $card 画板
-	* @param $str 要换行的文字
-	* @param $width 文字显示的宽度，到达这个宽度自动换行
-	* @param $x 基础 x坐标
-	* @param $y 基础Y坐标
-	* @param $fontsize 文字大小
-	* @param $fontfile 字体
-	* @param $color array 字体颜色
-	* @param $rowheight 行间距
-	* @param $maxrow 最多多少行
-	*/
+	/**
+	 * 直接输出到浏览器
+	 * @param string $ext
+	 */
+	public function stream($ext='png'){
+		header('Content-Type:image/'.$ext);
+		if(method_exists($this,$ext)){
+			$this->$ext(null,5);
+		}
+		exit;
+	}
+
+	/**
+		* 文字自动换行（摘自互联网）
+		* @param $card 画板
+		* @param $str 要换行的文字
+		* @param $width 文字显示的宽度，到达这个宽度自动换行
+		* @param $x 基础 x坐标
+		* @param $y 基础Y坐标
+		* @param $fontsize 文字大小
+		* @param $fontfile 字体
+		* @param $color array 字体颜色
+		* @param $rowheight 行间距
+		* @param $maxrow 最多多少行
+		*/
 	private function textalign($card, $str, $width, $x,$y,$fontsize,$fontfile,$color,$rowheight,$maxrow)
 	{
 		$tempstr = "";
@@ -167,16 +204,19 @@ class Poster
 		return true;
 	}
 
-
-	private function jpeg($filename,$quality){
+	private function jpg($filename=null,$quality){
 		imagejpeg($this->canvas,$filename,$quality);
 	}
 
-	private function png($filename,$quality){
+	private function jpeg($filename=null,$quality){
+		imagejpeg($this->canvas,$filename,$quality);
+	}
+
+	private function png($filename=null,$quality){
 		imagepng($this->canvas,$filename,$quality);
 	}
 
-	private function gif($filename,$quality){
+	private function gif($filename=null,$quality){
 		imagegif($this->canvas,$filename);
 	}
 
@@ -184,5 +224,9 @@ class Poster
 		if(!is_dir($dirname)){
 			mkdir($dirname,0777,true);
 		}
+	}
+
+	public function __destruct(){
+		imagedestroy($this->canvas);
 	}
 }
