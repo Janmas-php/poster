@@ -116,7 +116,7 @@ $poster->output(
 - 输出资源到浏览器
 
 ```
-$poster->output(
+$poster->stream(
 	$ext='png' //图片后缀
 	);
 ```
